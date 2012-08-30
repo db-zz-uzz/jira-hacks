@@ -1,0 +1,23 @@
+#github/gitignore/
+
+# OS X's stuff
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes
+
+#this one for linux
+.*
+!.gitignore
+*~
+
+# SublimeText project files
+/*.sublime-project
+*.sublime-workspace
