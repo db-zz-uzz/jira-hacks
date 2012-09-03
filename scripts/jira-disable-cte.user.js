@@ -110,20 +110,13 @@
 
     function set_tab_click_handler()
     {
-        var tabIdArray = [ 
-            "all-tabpanel", 
-            "comment-tabpanel",
-            "worklog-tabpanel",
-            "changehistory-tabpanel",
-            "activity-stream-issue-tab",
-            "fisheye-issuepanel" ];
+        var tabsList = eval_xpath( "id('issue-tabs')/li/a" );
 
-        for ( var tabId = 0; tabId < tabIdArray.length; tabId++ )
+        for ( var i = 0; i < tabsList.snapshotLength; i++ )
         {
-            document.getElementById( tabIdArray[tabId] ).addEventListener( "click", function() {
+            tabsList.snapshotItem(i).addEventListener( "click", function() {
                     unsafeWindow.setTimeout( check_content_loaded, 100 );
                 } );
-            console.info( tabIdArray[tabId] );
         }
     }
 
