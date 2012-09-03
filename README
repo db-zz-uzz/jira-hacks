@@ -1,6 +1,11 @@
 ABOUT
    Cloud storage of useful hacks for Atlassian JIRA.
 
+STUFF
+   1. Jira userscript that does some tweaks:
+      - Disable "click to edit" feature.
+      - Add "Comment" button to each comment and move 
+        answer form right to comment you answering to.
 
 LICENSE
     What is that about?
