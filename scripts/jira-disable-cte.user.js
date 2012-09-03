@@ -7,6 +7,16 @@
 
 (function() {
 
+    function form_cancel_button()
+    {
+        return document.getElementById("issue-comment-add-cancel");
+    }
+
+    function comment_form()
+    {
+        return document.getElementById("issue-comment-add");
+    }
+
     function eval_xpath( string )
     {
         return document.evaluate( string, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null );
@@ -38,7 +48,7 @@
     function handle_click() 
     {
         var comment = this.parentNode.parentNode.parentNode;
-        var form = document.getElementById("issue-comment-add");
+        var form = comment_form();
         
         if ( form == null ||
              comment.id != form.parentNode.id )
@@ -52,19 +62,19 @@
                 clickEvent.initEvent ('click', true, true);
                 clickTarget.dispatchEvent (clickEvent);
             
-                form = document.getElementById("issue-comment-add");
+                form = comment_form();
             }
             comment.appendChild( form.parentNode.removeChild( form ) );
-            form.style.display = "block";
             document.getElementById("comment").focus();
         }
         else
         {
             // form already shown. move it to original position.
-            var commentDiv = document.getElementById("addcomment");
-            console.info( commentDiv.id );
-            console.info( commentDiv.firstChild.id );
-            commentDiv.appendChild( form.parentNode.removeChild( form ) );
+            var commentDiv = eval_xpath("id('addcomment')/div[contains(@class, 'mod-content')]");
+            if ( commentDiv.snapshotLength == 1)
+            {
+                commentDiv.snapshotItem(0).appendChild( form.parentNode.removeChild( form ) );
+            }
         }
         
         return false;
