@@ -147,6 +147,7 @@
             commentLink.setAttribute("href", "#");
             commentLink.setAttribute("title", "Add comment");
             commentLink.setAttribute("name", "quick-answer");
+            commentLink.setAttribute("class", "comment-reply-button");
             commentLink.innerHTML = "Comment";
             
             commentLink.onclick = handle_click;
@@ -167,7 +168,10 @@
         add_css("header#stalker{ position: relative !important; left: 0px !important; } \
                 #summary-val { font-size: 12pt !important; } \
                 .stalker-placeholder { display: none !important; } \
-                .issue-links tr .actions .icon, .issue-data-block .actionContainer .action-links { visibility: visible !important; } ");
+                .issue-links tr .actions .icon, .issue-data-block .actionContainer .action-links { visibility: visible !important; } \
+                .comment-reply-button { border: 1px solid #DDDDDD; padding: 3px 6px; text-decoration: none !important; } \
+                .comment-reply-button:hover { border-color: #333333; } \
+                .comment-reply-button:active { background: #D0D0D0; } ");
 
         check_page_loaded();
     }
