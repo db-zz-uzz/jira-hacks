@@ -45,6 +45,16 @@
         }
     }
     
+    function move_form_back()
+    {
+        var commentDiv = eval_xpath("id('addcomment')/div[contains(@class, 'mod-content')]");
+        var form = comment_form();
+        if ( commentDiv.snapshotLength == 1)
+        {
+            commentDiv.snapshotItem(0).appendChild( form.parentNode.removeChild( form ) );
+        }
+    }
+
     function handle_click() 
     {
         var comment = this.parentNode.parentNode.parentNode;
@@ -70,11 +80,7 @@
         else
         {
             // form already shown. move it to original position.
-            var commentDiv = eval_xpath("id('addcomment')/div[contains(@class, 'mod-content')]");
-            if ( commentDiv.snapshotLength == 1)
-            {
-                commentDiv.snapshotItem(0).appendChild( form.parentNode.removeChild( form ) );
-            }
+            move_form_back();
         }
         
         return false;
@@ -125,6 +131,7 @@
         for ( var i = 0; i < tabsList.snapshotLength; i++ )
         {
             tabsList.snapshotItem(i).addEventListener( "click", function() {
+                    move_form_back();
                     unsafeWindow.setTimeout( check_content_loaded, 100 );
                 } );
         }
