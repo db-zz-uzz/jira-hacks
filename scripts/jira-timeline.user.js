@@ -22,8 +22,67 @@
         return elm;
 	}
 
+    function add_css( cssCode )
+    {
+        var styleElement = document.createElement("style");
+        styleElement.type = "text/css";
+        if (styleElement.styleSheet) 
+        {
+            styleElement.styleSheet.cssText = cssCode;
+        } 
+        else 
+        {
+            styleElement.appendChild(document.createTextNode(cssCode));
+        }
+        document.getElementsByTagName("head")[0].appendChild(styleElement);
+    }
+
+    function json_issue_addr()
+    {
+    	return "http://jira.zoran.com/rest/api/latest/issue/" + document.getElementById("key-val").innerHTML;
+    }
+
+    function draw_timeline()
+    {
+    	var image_width = jQuery("#timeline-content").width();
+		var paper = new Raphael( document.getElementById("timeline-content"), image_width, 200 );
+
+
+		var mainLine = paper.path("M 10 100 l "+(image_width-20)+" 0");
+    }
+
 	function click_handler()
 	{
+		if ( jQuery('#issue-timeline').length == 0 ) 
+		{
+			// we need to construct new timeline
+			jQuery("#jira").append(create_element("div", "timeline", "issue-timeline"));
+
+			// close button
+			var closeBtn = create_element("a", "close");
+			closeBtn.addEventListener( "click", function() {
+				console.info("close click");
+				jQuery('#issue-timeline').hide();
+			})
+			closeBtn.innerHTML = "Close";
+			closeBtn.setAttribute("href", "#");
+			closeBtn.setAttribute("title", "Close timeline");
+
+			// caption
+			var capt = create_element("h2");
+			capt.innerHTML = "Issue timeline";
+
+			var content = create_element("div", "content", "timeline-content");
+			var innerWidth = jQuery("#issue-timeline").width() - 20; 
+			content.width = innerWidth;
+
+			// inner body
+			jQuery("#issue-timeline").append(closeBtn).append(capt).append(content);
+
+			jQuery.getJSON( json_issue_addr() , draw_timeline);
+		}
+		jQuery('#issue-timeline').show();
+
 		console.info("Timeline click handler");
 		return false;
 	}
@@ -31,7 +90,8 @@
 	// returns a place we should insert button to
 	function buttons_parent()
 	{
-		var list = document.evaluate( "//*[contains(@class, 'toolbar-split toolbar-split-right')]", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null );
+		var list = document.evaluate( "//*[contains(@class, 'toolbar-split toolbar-split-right')]", document, 
+									  null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null );
 		if ( list.snapshotLength == 1 )
 		{
 			return list.snapshotItem(0);
@@ -60,6 +120,14 @@
 	place_button();
 
 	// jQuery and Raphael are already bundled with Jira scripts
-	console.info(jQuery);
-	console.info(Raphael);
+	//console.info(jQuery);
+	//console.info(Raphael);
+
+	add_css(
+		"#issue-timeline { position: fixed; width: 98%; background-color: #FFFFFF; \
+						   top: 20px; left: 0px; z-index: 5000; margin: 0 1%; border: 1px solid #E0E0E0; } \
+		 #issue-timeline #timeline-content { min-height: 50px; margin: 10px; background-color: #DDDDDD; } \
+		 #issue-timeline h2 { margin: 10px; } \
+		 #issue-timeline .close { position: absolute; top: 0; right: 0; padding: 2px 6px; }"
+	);
 })();
