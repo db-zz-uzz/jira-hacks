@@ -37,18 +37,42 @@
         document.getElementsByTagName("head")[0].appendChild(styleElement);
     }
 
+    function jira_date_to_msec( date_str )
+    {
+    	console.info( date_str );
+
+    	var t_pos = date_str.indexOf("T");
+    	var msec_pos = date_str.indexOf(".");
+    	// do not take GMT offset into account for now
+
+    	var date_val = date_str.substring(0, t_pos).split("-");
+    	var time_val = date_str.substring(t_pos+1, msec_pos).split(":");
+    	var msec_val = date_str.substring(msec_pos + 1, msec_pos+4);
+
+    	var datetime = new Date( date_val[0], date_val[1], date_val[2],
+    							time_val[0], time_val[1], time_val[2], 
+    							msec_val );
+
+    	console.info(datetime.toString());
+    	return datetime.getTime();
+    }
+
     function json_issue_addr()
     {
     	return "http://jira.zoran.com/rest/api/latest/issue/" + document.getElementById("key-val").innerHTML;
     }
 
-    function draw_timeline()
+    function draw_timeline( data )
     {
     	var image_width = jQuery("#timeline-content").width();
 		var paper = new Raphael( document.getElementById("timeline-content"), image_width, 200 );
 
 
 		var mainLine = paper.path("M 10 100 l "+(image_width-20)+" 0");
+
+		var issue = data.fields;
+
+		console.info( jira_date_to_msec(issue.created) );
     }
 
 	function click_handler()
@@ -61,7 +85,6 @@
 			// close button
 			var closeBtn = create_element("a", "close");
 			closeBtn.addEventListener( "click", function() {
-				console.info("close click");
 				jQuery('#issue-timeline').hide();
 			})
 			closeBtn.innerHTML = "Close";
@@ -83,7 +106,6 @@
 		}
 		jQuery('#issue-timeline').show();
 
-		console.info("Timeline click handler");
 		return false;
 	}
 
