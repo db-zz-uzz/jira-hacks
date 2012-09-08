@@ -37,10 +37,8 @@
         document.getElementsByTagName("head")[0].appendChild(styleElement);
     }
 
-    function jira_date_to_msec( date_str )
+    function jira_date_parse( date_str )
     {
-    	console.info( date_str );
-
     	var t_pos = date_str.indexOf("T");
     	var msec_pos = date_str.indexOf(".");
     	// do not take GMT offset into account for now
@@ -49,12 +47,11 @@
     	var time_val = date_str.substring(t_pos+1, msec_pos).split(":");
     	var msec_val = date_str.substring(msec_pos + 1, msec_pos+4);
 
-    	var datetime = new Date( date_val[0], date_val[1], date_val[2],
+    	var datetime = new Date( date_val[0], date_val[1]-1, date_val[2],
     							time_val[0], time_val[1], time_val[2], 
     							msec_val );
 
-    	console.info(datetime.toString());
-    	return datetime.getTime();
+    	return datetime;
     }
 
     function json_issue_addr()
@@ -72,7 +69,7 @@
 
 		var issue = data.fields;
 
-		console.info( jira_date_to_msec(issue.created) );
+		console.info( jira_date_parse(issue.created) );
     }
 
 	function click_handler()
