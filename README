@@ -1,11 +1,24 @@
 ABOUT
+
    Cloud storage of useful hacks for Atlassian JIRA.
 
+
 STUFF
+
    1. Jira userscript that does some tweaks:
       - Disable "click to edit" feature.
       - Add "Comment" button to each comment and move 
         answer form right to comment you answering to.
 
+   2. Jira issue timeline script (in active development).
+      Show various attributes of issue on time line.
+      Features planned:
+      - Show assignee change.
+      - Show progress start/stop.
+      - Show PMO request & TL response.
+      - Show actually logged time (besides in-progress time).
+
+
 LICENSE
+
     What is that about?
