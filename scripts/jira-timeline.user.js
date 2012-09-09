@@ -8,6 +8,41 @@
 
 (function () {
 
+	/**
+	* Returns the week number for this date. dowOffset is the day of week the week
+	* "starts" on for your locale - it can be from 0 to 6. If dowOffset is 1 (Monday),
+	* the week returned is the ISO 8601 week number.
+	* @param int dowOffset
+	* @return int
+	*/
+	Date.prototype.getWeek = function (dowOffset) {
+		/*getWeek() was developed by Nick Baicoianu at MeanFreePath: http://www.epoch-calendar.com */
+
+		dowOffset = typeof(dowOffset) == 'int' ? dowOffset : 0; //default dowOffset to zero
+		var newYear = new Date(this.getFullYear(),0,1);
+		var day = newYear.getDay() - dowOffset; //the day of week the year begins on
+		day = (day >= 0 ? day : day + 7);
+		var daynum = Math.floor((this.getTime() - newYear.getTime() -
+			(this.getTimezoneOffset()-newYear.getTimezoneOffset())*60000)/86400000) + 1;
+		var weeknum;
+		//if the year starts before the middle of a week
+		if(day < 4) {
+			weeknum = Math.floor((daynum+day-1)/7) + 1;
+			if(weeknum > 52) {
+				nYear = new Date(this.getFullYear() + 1,0,1);
+				nday = nYear.getDay() - dowOffset;
+				nday = nday >= 0 ? nday : nday + 7;
+				/*if the next year starts before the middle of
+				the week, it is week #1 of that year*/
+				weeknum = nday < 4 ? 1 : 53;
+			}
+		}
+		else {
+			weeknum = Math.floor((daynum+day-1)/7);
+		}
+		return weeknum;
+	};
+
 	function create_element(elm_tag, elm_class, elm_id)
 	{
         var elm = document.createElement(elm_tag);
@@ -56,20 +91,68 @@
 
     function json_issue_addr()
     {
-    	return "http://jira.zoran.com/rest/api/latest/issue/" + document.getElementById("key-val").innerHTML;
+    	return "http://jira.zoran.com/rest/api/latest/issue/" + document.getElementById("key-val").innerHTML + "?expand=changelog";
     }
 
     function draw_timeline( data )
     {
     	var image_width = jQuery("#timeline-content").width();
-		var paper = new Raphael( document.getElementById("timeline-content"), image_width, 200 );
-
+    	var image_height = 200;
+		var paper = new Raphael( document.getElementById("timeline-content"), image_width, image_height );
 
 		var mainLine = paper.path("M 10 100 l "+(image_width-20)+" 0");
 
 		var issue = data.fields;
+		var log = data.changelog;
 
-		console.info( jira_date_parse(issue.created) );
+		var createdDate = jira_date_parse(issue.created);
+		var nowDate = new Date();
+
+		// calc width of day in pixels
+		var days_old = Math.ceil( (nowDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24) );
+
+		var day_pix = image_width / days_old;
+		
+		// get next monday's timestamp
+		// shift days to maynday be 0
+		var created_day = createdDate.getDay();
+		if ( created_day == 0 )
+		{
+			created_day = 6;
+		}
+		else
+		{
+			created_day = created_day - 1;
+		}
+
+		var next_monday_ts = createdDate.getTime() + ( (7 - created_day) * (1000 * 60 * 60 * 24) );
+
+		// draw week lines & week names		
+		{
+			var week_lines_arr = new Array();
+			// first week
+			week_lines_arr[0] = {left: 0, name: "WW-"+createdDate.getWeek()};
+
+			var left = (7 - created_day) * day_pix;
+			for( var ts = next_monday_ts; ts < nowDate.getTime(); ts += 1000 * 60 * 60 * 24 * 7)
+			{
+				var date = new Date(ts);
+				week_lines_arr.push({left: left, name: "WW-" + date.getWeek()});
+
+				paper.path("M "+left+" 0 L "+left+" "+(image_height)).attr({stroke: "#DDDDDD"});
+
+				left += day_pix * 7;
+			}
+
+			week_lines_arr.push({left: image_width, name: "last"});
+
+			for ( var i = 0; i < week_lines_arr.length - 1; i++ )
+			{
+				paper.text( (week_lines_arr[i].left + week_lines_arr[i+1].left)/2, image_height - 5, 
+							week_lines_arr[i].name
+						).attr({ "font-size": 10, "font-family": "Arial, Helvetica, sans-serif", fill: "#666" });
+			}
+		}
     }
 
 	function click_handler()
@@ -145,7 +228,7 @@
 	add_css(
 		"#issue-timeline { position: fixed; width: 98%; background-color: #FFFFFF; \
 						   top: 20px; left: 0px; z-index: 5000; margin: 0 1%; border: 1px solid #E0E0E0; } \
-		 #issue-timeline #timeline-content { min-height: 50px; margin: 10px; background-color: #DDDDDD; } \
+		 #issue-timeline #timeline-content { min-height: 50px; margin: 10px; } \
 		 #issue-timeline h2 { margin: 10px; } \
 		 #issue-timeline .close { position: absolute; top: 0; right: 0; padding: 2px 6px; }"
 	);
