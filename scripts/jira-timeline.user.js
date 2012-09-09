@@ -43,6 +43,31 @@
 		return weeknum;
 	};
 
+	function line_weight( in_progress )
+	{
+		console.info("line_weight ", in_progress);
+		return (in_progress ? 16 : 6);
+	}
+
+	function assignee_color( index )
+	{
+		var colors = [
+			"#AB44F1",
+			"#E73813",
+			"#48A8DA",
+			"#44F14B",
+			"#E7CB41",
+			"#C0C454",
+			"#5C915D",
+			"#38BF98",
+			"#3C3734",
+			"#8C7E4E",
+		];
+
+		// stub for assignee count > 10
+		return (index >= colors.length) ? "#000000" : colors[index];
+	}
+
 	function create_element(elm_tag, elm_class, elm_id)
 	{
         var elm = document.createElement(elm_tag);
@@ -94,13 +119,58 @@
     	return "http://jira.zoran.com/rest/api/latest/issue/" + document.getElementById("key-val").innerHTML + "?expand=changelog";
     }
 
+    // extract assignee chang and work start/stop events from log.
+    function get_main_line_events( changes )
+    {
+  		var events = new Array();
+    	var histories = changes.histories;
+
+    	//for ( var eventId = 0; eventId < changes.total; iventId++ )
+    	for ( var eventId in histories )
+    	{
+    		//for ( var changeId = 0; changeId < histories[eventId].items.length; changeId++ )
+    		for ( var changeId in histories[eventId].items )
+    		{
+    			var change = histories[eventId].items[changeId];
+    			// 3 is ID of "In Progress" status
+    			if ( ( change.field == "assignee" ) || 
+    				 ( (change.field == "status") && ( (change.from == 3) || (change.to == 3) ) ) )
+    			{
+    				events.push({
+    					authorName: histories[eventId].author.displayName,
+    					change:     change,
+    					created:    histories[eventId].created,
+    				});
+    			}
+    			//console.info( histories[eventId].author.displayName + " " + change.field 
+    			//			+ ": " + change.fromString + " -> " + change.toString );
+    		}
+    	} 	
+    	return events;
+    }
+
+    function get_left_pos( event_time, issue_created, now_date, image_width )
+    {
+    	var event_scale = ( issue_created.getTime() - event_time.getTime() ) / ( issue_created.getTime() - now_date.getTime() );
+    	var pos = ( image_width * event_scale );
+    	return pos;
+    }
+
+    function draw_main_event( paper, event, line, image_width, image_height )
+    {
+    	console.info( line );
+    	var path_str = "M "+ line.start + " " + (image_height / 2) + " L " + line.end + " " + (image_height / 2);
+    	console.info( path_str );
+    	paper.path( path_str ).attr({stroke: line.color, 
+    								"stroke-width": line.weight, 
+    								 });
+    }
+
     function draw_timeline( data )
     {
     	var image_width = jQuery("#timeline-content").width();
     	var image_height = 200;
 		var paper = new Raphael( document.getElementById("timeline-content"), image_width, image_height );
-
-		var mainLine = paper.path("M 10 100 l "+(image_width-20)+" 0");
 
 		var issue = data.fields;
 		var log = data.changelog;
@@ -153,6 +223,71 @@
 						).attr({ "font-size": 10, "font-family": "Arial, Helvetica, sans-serif", fill: "#666" });
 			}
 		}
+
+		// main line events such as assignee change and start/stop work
+		var main_line_events = get_main_line_events( log );
+		//console.info( main_line_events );
+
+		// back traverse and draw main line
+		{
+			var assignee_count = 0;
+			var line = { start: image_width, 
+						end: 0, 
+						weight: line_weight( issue.status.id == 3 ), 
+						color: assignee_color( assignee_count ) };
+			var color_list = {};
+			var key = issue.assignee.name;
+			color_list[key] = assignee_color(assignee_count);
+
+			for ( var eventId = main_line_events.length - 1; eventId > -1; eventId-- )
+			{
+				//console.info( main_line_events[eventId] );
+				if ( main_line_events[eventId].change.field == "assignee" )
+				{
+					line.end = get_left_pos( jira_date_parse( main_line_events[eventId].created ),
+											createdDate, nowDate, image_width );
+
+					// draw here
+					draw_main_event( paper, main_line_events[eventId].change, line, image_width, image_height )
+
+					key = main_line_events[eventId].change.from;
+					if ( color_list[key] == null )
+					{
+						assignee_count += 1;
+						color_list[key] = assignee_color(assignee_count);
+					}
+
+					line.color = color_list[key];
+					//console.info("color ", line.color);
+					line.start = line.end;
+					line.end = 0;
+				}
+				if ( main_line_events[eventId].change.field == "status" )
+				{
+					line.end = get_left_pos( jira_date_parse( main_line_events[eventId].created ),
+											createdDate, nowDate, image_width );
+
+					// draw here
+					draw_main_event( paper, main_line_events[eventId].change, line, image_width, image_height )
+
+					if ( main_line_events[eventId].change.from == 3 )
+					{
+						line.weight = line_weight(true);
+					}
+					else if ( main_line_events[eventId].change.to == 3 )
+					{
+						line.weight = line_weight(false);
+					}
+
+					line.start = line.end;
+					line.end = 0;
+				}
+			}
+			// issue is not in progress when created
+			line.weight = line_weight( false );
+			draw_main_event( paper, main_line_events[0].change, line, image_width, image_height );
+		}
+
     }
 
 	function click_handler()
