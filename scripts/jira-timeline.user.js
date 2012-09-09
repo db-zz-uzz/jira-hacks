@@ -124,10 +124,8 @@
   		var events = new Array();
     	var histories = changes.histories;
 
-    	//for ( var eventId = 0; eventId < changes.total; iventId++ )
     	for ( var eventId in histories )
     	{
-    		//for ( var changeId = 0; changeId < histories[eventId].items.length; changeId++ )
     		for ( var changeId in histories[eventId].items )
     		{
     			var change = histories[eventId].items[changeId];
@@ -141,8 +139,6 @@
     					created:    histories[eventId].created,
     				});
     			}
-    			//console.info( histories[eventId].author.displayName + " " + change.field 
-    			//			+ ": " + change.fromString + " -> " + change.toString );
     		}
     	} 	
     	return events;
@@ -155,10 +151,27 @@
     	return pos;
     }
 
-    function draw_main_event( paper, event, line, image_width, image_height )
+    function draw_main_event( paper, event, line_style, image_width, image_height )
     {
-    	var path_str = "M "+ line.start + " " + (image_height / 2) + " L " + line.end + " " + (image_height / 2);
-    	var line = paper.path( path_str ).attr({stroke: line.color, "stroke-width": line.weight });
+    	var path_str = "M "+ line_style.start + " " + (image_height / 2) + " L " + line_style.end + " " + (image_height / 2);
+    	var line = paper.path( path_str ).attr({stroke: line_style.color, "stroke-width": line_style.weight });
+
+    	var overline_top = (image_height / 2) - (line_weight(true) / 2) - 3;
+    	path_str = "M " + line_style.start + " " + overline_top + " L " + line_style.end + " " + overline_top;
+    	var overline = paper.path(path_str).attr({stroke: line_style.color, "stroke-width": 2 });
+    	line.h = {};
+    	line.h.overline = overline;
+    	line.h.overline.hide();
+    	
+    	var mouseover = function() {
+    		this.h.overline.show();
+    	}
+
+    	var mouseleave = function() {
+    		this.h.overline.hide();
+    	}
+
+    	line.hover( mouseover, mouseleave );
 
     	// to add hint with assignee change info here
     }
