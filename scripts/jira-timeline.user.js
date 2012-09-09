@@ -158,9 +158,9 @@
     function draw_main_event( paper, event, line, image_width, image_height )
     {
     	var path_str = "M "+ line.start + " " + (image_height / 2) + " L " + line.end + " " + (image_height / 2);
-    	paper.path( path_str ).attr({stroke: line.color, 
-    								"stroke-width": line.weight, 
-    								 });
+    	var line = paper.path( path_str ).attr({stroke: line.color, "stroke-width": line.weight });
+
+    	// to add hint with assignee change info here
     }
 
     function draw_timeline( data )
@@ -245,7 +245,10 @@
 											createdDate, nowDate, image_width );
 
 					// draw here
-					draw_main_event( paper, main_line_events[eventId].change, line, image_width, image_height )
+					draw_main_event( paper, 
+									{ author: main_line_events[eventId].authorName, 
+										assignee: main_line_events[eventId].change.toString },
+									line, image_width, image_height )
 
 					key = main_line_events[eventId].change.from;
 					if ( color_list[key] == null )
@@ -265,7 +268,7 @@
 											createdDate, nowDate, image_width );
 
 					// draw here
-					draw_main_event( paper, main_line_events[eventId].change, line, image_width, image_height )
+					draw_main_event( paper, { }, line, image_width, image_height )
 
 					if ( main_line_events[eventId].change.from == 3 )
 					{
@@ -282,7 +285,9 @@
 			}
 			// issue is not in progress when created
 			line.weight = line_weight( false );
-			draw_main_event( paper, main_line_events[0].change, line, image_width, image_height );
+			draw_main_event( paper, 
+							{ author: "Initial", assignee: main_line_events[0].change.fromString },
+							line, image_width, image_height );
 		}
 
     }
