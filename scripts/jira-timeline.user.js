@@ -45,7 +45,6 @@
 
 	function line_weight( in_progress )
 	{
-		console.info("line_weight ", in_progress);
 		return (in_progress ? 16 : 6);
 	}
 
@@ -158,9 +157,7 @@
 
     function draw_main_event( paper, event, line, image_width, image_height )
     {
-    	console.info( line );
     	var path_str = "M "+ line.start + " " + (image_height / 2) + " L " + line.end + " " + (image_height / 2);
-    	console.info( path_str );
     	paper.path( path_str ).attr({stroke: line.color, 
     								"stroke-width": line.weight, 
     								 });
