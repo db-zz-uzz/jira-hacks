@@ -282,7 +282,21 @@
 		var log = data.changelog;
 
 		var createdDate = jira_date_parse(issue.created);
-		var nowDate = new Date();
+
+    	var nowDate;
+    	if ( (issue.status.id == 6) ||
+    		 (issue.status.id == 5) ) 
+    	{
+	    	// status 6 - closed. 5 - resolved
+    		// issue is resolved/fixed.
+    		// clip timeline to resulition date.
+    		// :FIXME: is last update date better?
+    		nowDate = jira_date_parse(issue.resolutiondate);
+    	}
+    	else
+    	{
+			nowDate = new Date();
+    	}
 
 		// calc width of day in pixels
 		var days_old = Math.ceil( (nowDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24) );
