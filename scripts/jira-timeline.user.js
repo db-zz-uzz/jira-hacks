@@ -43,6 +43,26 @@
 		return weeknum;
 	};
 
+
+	function cloneObj( obj ) 
+	{
+		var clone = {};
+
+		for ( var i in obj ) 
+		{
+			if ( typeof obj[i] == 'object' ) 
+			{
+				clone[i] = cloneObj( obj[i] );
+			} 
+			else 
+			{
+				clone[i] = obj[i];
+			}
+		}
+
+		return clone;
+	}
+
 	function line_weight( in_progress )
 	{
 		return (in_progress ? 16 : 6);
@@ -151,8 +171,9 @@
     	return pos;
     }
 
-    function draw_main_event( paper, change, line_style, image_width, image_height )
+    function draw_main_event( paper, line_style )
     {
+    	var image_height = paper.tl_size.height;
     	var path_str = "M "+ line_style.start + " " + (image_height / 2) + " L " + line_style.end + " " + (image_height / 2);
     	var line = paper.path( path_str ).attr({stroke: line_style.color, "stroke-width": line_weight( line_style.in_progress ) });
     	paper.mainLines.push(line);
@@ -164,58 +185,89 @@
 
     	line.h.overline = overline;
     	line.h.overline.hide();
-    	line.h.change = change;
-    	
+    	line.h.assignee = cloneObj(line_style.assignee); // change;
+
     	var mouseover = function() {
-    		for ( var i = 0; i < this.h.overline.tl_siblings.length; i++ )
+    		for ( var i = 0; i < this.h.overline_list.length; i++ )
     		{
-    			this.h.overline.tl_siblings[i].show();
+    			this.h.overline_list[i].show();
     		}
-    		console.info(this.h.change.assignee_string);
+    		this.h.tooltip.show();
     	}
 
     	var mouseleave = function() {
-    		for ( var i = 0; i < this.h.overline.tl_siblings.length; i++ )
+    		for ( var i = 0; i < this.h.overline_list.length; i++ )
     		{
-    			this.h.overline.tl_siblings[i].hide();
+    			this.h.overline_list[i].hide();
     		}
+    		this.h.tooltip.hide();
     	}
 
    		line.hover( mouseover, mouseleave );
 
-    	// to add hint with assignee change info here
+    	return line;
     }
 
-    function connect_overlines( lines_list )
+    function create_tooltip( paper, assignee_data )
     {
-    	// map lines to assignee name. then push line list to each line
-    	console.info( "enter connect_overlines");
-    	var map = {};
-    	for ( var i = 0; i < lines_list.length; i++ )
-    	{
-    		//console.info( "connecting ", lines_list[i].h.change.assignee, lines_list[i].h.change.assignee_string );
-   			var key = lines_list[i].h.change.assignee;
-    		if ( map[key] == null )
-    		{
-    			// create new entry
-    			map[key] = new Array();
-    			//console.info( "create entry for ", key );
-    		}
-    		lines_list[i].h.overline.tl_siblings = map[key];
-    		map[key].push( lines_list[i].h.overline );
-    	}
-/*
-    	for ( var key in map )
-    	{
-    		console.info( key, " - ", map[key].length );
-    	}
+    	var tooltip = { };
+    	tooltip.objs = { };
+    	tooltip.padding = { x: 4, y: 2 };
+    	tooltip.objs.text = paper.text(0, 0, assignee_data.displayName ).attr({ 
+    						"font-size": 14, "font-family": "Arial, Helvetica, sans-serif", fill: "#222" });
+    	textBox = tooltip.objs.text.getBBox();
+    	tooltip.objs.rect = paper.rect(	0, 0, 
+    									(textBox.width + tooltip.padding.x * 2), 
+    									(textBox.height + tooltip.padding.y * 2), 
+    									3).attr( {fill: "#ddd", opacity: "0.9" } );
 
-    	console.info("aeou");
-    	for ( var i = 0; i < lines_list.length; i++ )
+    	tooltip.objs.text.insertAfter(tooltip.objs.rect);
+
+    	tooltip.moveTo = function( x, y ) {
+    		this.objs.rect.attr({ x: x, y: y});
+    		var textBBox = this.objs.text.getBBox();
+    		var textXshift = textBBox.width / 2;
+    		var textYshift = textBBox.height / 2;
+    		tooltip.objs.text.attr({ x: (textXshift + x + this.padding.x),
+    								 y: (textYshift + y + this.padding.y) });
+    	};
+
+    	tooltip.show = function() {
+    		for ( var elm in this.objs )
+    		{
+    			this.objs[elm].show();
+    		}
+    	};
+
+		tooltip.hide = function() {
+    		for ( var elm in this.objs )
+    		{
+    			this.objs[elm].hide();
+    		}
+    	};
+
+    	tooltip.hide();
+    	tooltip.moveTo(10, 10);
+    	return tooltip;
+    }
+
+    function render_main_line( paper, line_list )
+    {
+    	console.info( paper.tl_size );
+    	var map = {};
+    	for ( var i = 0; i < line_list.length; i++ )
     	{
-    		console.info( lines_list[i].h.change.assignee, " - ", lines_list[i].h.overline.tl_siblings.length );
-		}
-*/
+    		var line = draw_main_event( paper, line_list[i] );
+    		if ( map[line.h.assignee.name] == null )
+    		{
+    			map[line.h.assignee.name] = { };
+    			map[line.h.assignee.name].overline_list = new Array();
+    			map[line.h.assignee.name].tooltip = create_tooltip( paper, line.h.assignee );
+    		}
+    		line.h.overline_list = map[line.h.assignee.name].overline_list;
+    		line.h.tooltip = map[line.h.assignee.name].tooltip;
+    		map[line.h.assignee.name].overline_list.push( line.h.overline );
+    	}
     }
 
     function draw_timeline( data )
@@ -223,6 +275,7 @@
     	var image_width = jQuery("#timeline-content").width();
     	var image_height = 200;
 		var paper = new Raphael( document.getElementById("timeline-content"), image_width, image_height );
+		paper.tl_size = { width: image_width, height: image_height };
 		paper.mainLines = new Array();
 
 		var issue = data.fields;
@@ -279,66 +332,62 @@
 
 		// main line events such as assignee change and start/stop work
 		var main_line_events = get_main_line_events( log );
-		//console.info( main_line_events );
 
 		// back traverse and draw main line
 		{
 			var assignee_count = 0;
 			var line = { start: image_width, 
-						end: 0, 
-						in_progress: (issue.status.id == 3 ),
-						//weight: line_weight( issue.status.id == 3 ), 
-						color: assignee_color( assignee_count ) };
-			var color_list = {};
-			var key = issue.assignee.name;
+						 end: 0, 
+						 in_progress: (issue.status.id == 3 ),
+						 color: assignee_color( assignee_count ),
+						 assignee: {
+							name: issue.assignee.name,
+							displayName: issue.assignee.displayName,
+							displayAssignedBy: null,
+						 }
+			};
+			var line_list = new Array();
+			var color_hash = {};
 			var assignee_string = issue.assignee.displayName;
-			color_list[key] = assignee_color(assignee_count);
+			color_hash[line.assignee.name] = assignee_color(assignee_count);
 
 			for ( var eventId = main_line_events.length - 1; eventId > -1; eventId-- )
 			{
-				//console.info( main_line_events[eventId] );
 				if ( main_line_events[eventId].change.field == "assignee" )
 				{
+					line.assignee.displayAssignedBy = main_line_events[eventId].authorName;
 					line.end = get_left_pos( jira_date_parse( main_line_events[eventId].created ),
 											createdDate, nowDate, image_width );
 
-					// draw here
-					draw_main_event( paper, 
-									{ author: main_line_events[eventId].authorName, 
-										assignee: key,
-										assignee_string: main_line_events[eventId].change.toString },
-									line, image_width, image_height )
+					line_list.push( cloneObj(line) );
 
-					key = main_line_events[eventId].change.from;
-					assignee_string = main_line_events[eventId].change.fromString;
-					if ( color_list[key] == null )
+					line.assignee.name = main_line_events[eventId].change.from;
+					line.assignee.displayName = main_line_events[eventId].change.fromString;
+					if ( color_hash[line.assignee.name] == null )
 					{
 						assignee_count += 1;
-						color_list[key] = assignee_color(assignee_count);
+						color_hash[line.assignee.name] = assignee_color(assignee_count);
 					}
 
-					line.color = color_list[key];
-					//console.info("color ", line.color);
+					line.color = color_hash[line.assignee.name];
 					line.start = line.end;
 					line.end = 0;
 				}
 				if ( main_line_events[eventId].change.field == "status" )
 				{
+					line.assignee.displayAssignedBy = null;
 					line.end = get_left_pos( jira_date_parse( main_line_events[eventId].created ),
 											createdDate, nowDate, image_width );
 
-					// draw here
-					draw_main_event( paper, { assignee: key, assignee_string: assignee_string }, line, image_width, image_height )
+					line_list.push( cloneObj(line) );
 
 					if ( main_line_events[eventId].change.from == 3 )
 					{
 						line.in_progress = true;
-						//line.weight = line_weight(true);
 					}
 					else if ( main_line_events[eventId].change.to == 3 )
 					{
 						line.in_progress = false;
-						//line.weight = line_weight(false);
 					}
 
 					line.start = line.end;
@@ -347,13 +396,11 @@
 			}
 			// issue is not in progress when created
 			line.weight = line_weight( false );
-			draw_main_event( paper, 
-							{ author: "Initial", 
-								assignee: key,
-								assignee_string: assignee_string },
-							line, image_width, image_height );
+			line.assignee.displayAssignedBy = "Initial";
 
-			connect_overlines( paper.mainLines );
+			line_list.push( cloneObj(line) );
+
+			render_main_line( paper, line_list );
 		}
 
     }
